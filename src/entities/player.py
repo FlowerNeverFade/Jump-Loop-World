@@ -70,9 +70,10 @@ class Player(AnimatedEntity):
         
         # 碰撞体积 - 比精灵稍小，去掉头顶空白区域
         self.collision_width = PLAYER_WIDTH - 4   # 28 (左右各缩2像素)
-        self.collision_height = PLAYER_HEIGHT - 10  # 38 (去掉头顶10像素空白)
+        # 只缩短“头顶”碰撞，让玩家能通过 1 格高（32px）的通道；底部对齐不变
+        self.collision_height = TILE_SIZE  # 32
         self.collision_offset_x = 2  # 居中
-        self.collision_offset_y = 10  # 从头顶下移10像素
+        self.collision_offset_y = PLAYER_HEIGHT - self.collision_height  # 从头顶下移，使底部保持对齐
         
         # 更新碰撞矩形尺寸
         self.rect.width = self.collision_width

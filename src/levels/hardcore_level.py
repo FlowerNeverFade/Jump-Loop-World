@@ -212,6 +212,9 @@ class HardcoreLevel:
         """生成连接各层的通道"""
         num_connectors = random.randint(8, 15)
         
+        # 缓存固体瓦片占用格子，避免连接器/障碍物刷进砖块里
+        solid_cells = {(t.grid_x, t.grid_y) for t in self.tiles if getattr(t, "solid", False)}
+        
         for _ in range(num_connectors):
             x = random.randint(15, self.width - 20)
             
@@ -239,8 +242,11 @@ class HardcoreLevel:
             
             elif connector_type == 'spring':
                 # 弹簧
-                spring = Spring(x * TILE_SIZE, (lower_y - 1) * TILE_SIZE)
-                self.obstacles.append(spring)
+                gx, gy = x, lower_y - 1
+                # 不能放在砖块/平台/楼梯等固体格子里
+                if (gx, gy) not in solid_cells:
+                    spring = Spring(gx * TILE_SIZE, gy * TILE_SIZE)
+                    self.obstacles.append(spring)
     
     def _generate_obstacles(self, floors: List[Dict]) -> None:
         """生成危险障碍物"""
@@ -248,38 +254,73 @@ class HardcoreLevel:
         safe_zone_start = 0
         safe_zone_end = 12  # 前12格是安全区域
         
+        # 固体瓦片占用格子（避免刷进砖块里）
+        solid_cells = {(t.grid_x, t.grid_y) for t in self.tiles if getattr(t, "solid", False)}
+        # 已放置障碍物占用格子（避免互相重叠）
+        obstacle_cells = set()
+        for ob in self.obstacles:
+            gx = int(ob.x // TILE_SIZE)
+            gy = int(ob.y // TILE_SIZE)
+            obstacle_cells.add((gx, gy))
+        
         # 激光发射器
         num_lasers = random.randint(3, 8)
         for _ in range(num_lasers):
-            x = random.randint(safe_zone_end + 8, self.width - 25)
-            floor = random.choice(floors[1:])  # 不放在地面
-            y = floor['y'] - 2
-            
-            direction = random.choice([-1, 1])
-            laser = Laser(x * TILE_SIZE, y * TILE_SIZE, direction)
-            self.obstacles.append(laser)
+            for _attempt in range(30):
+                x = random.randint(safe_zone_end + 8, self.width - 25)
+                floor = random.choice(floors[1:])  # 不放在地面
+                y = floor['y'] - 2
+                
+                if (x, y) in solid_cells or (x, y) in obstacle_cells:
+                    continue
+                # 放激光时也要求下面一格有平台/砖块支撑，避免悬空塞进结构里
+                if (x, y + 1) not in solid_cells:
+                    continue
+                
+                direction = random.choice([-1, 1])
+                laser = Laser(x * TILE_SIZE, y * TILE_SIZE, direction)
+                self.obstacles.append(laser)
+                obstacle_cells.add((x, y))
+                break
         
         # 移动锯齿 - 远离出生点
         num_saws = random.randint(5, 12)
         for _ in range(num_saws):
-            x = random.randint(safe_zone_end + 5, self.width - 20)
-            floor = random.choice(floors)
-            y = floor['y'] - 1
-            
-            vertical = random.random() < 0.3
-            move_range = random.randint(3, 6)
-            saw = MovingSaw(x * TILE_SIZE, y * TILE_SIZE, move_range, vertical)
-            self.obstacles.append(saw)
+            for _attempt in range(30):
+                x = random.randint(safe_zone_end + 5, self.width - 20)
+                floor = random.choice(floors)
+                y = floor['y'] - 1
+                
+                if (x, y) in solid_cells or (x, y) in obstacle_cells:
+                    continue
+                if (x, y + 1) not in solid_cells:
+                    continue
+                
+                vertical = random.random() < 0.3
+                move_range = random.randint(3, 6)
+                saw = MovingSaw(x * TILE_SIZE, y * TILE_SIZE, move_range, vertical)
+                self.obstacles.append(saw)
+                obstacle_cells.add((x, y))
+                break
         
         # 弹簧 - 可以放近一些（不危险）
         num_springs = random.randint(5, 10)
         for _ in range(num_springs):
-            x = random.randint(safe_zone_end, self.width - 15)
-            floor = random.choice(floors)
-            y = floor['y'] - 1
-            
-            spring = Spring(x * TILE_SIZE, y * TILE_SIZE)
-            self.obstacles.append(spring)
+            for _attempt in range(30):
+                x = random.randint(safe_zone_end, self.width - 15)
+                floor = random.choice(floors)
+                y = floor['y'] - 1
+                
+                if (x, y) in solid_cells or (x, y) in obstacle_cells:
+                    continue
+                # 弹簧必须放在平台/砖块上
+                if (x, y + 1) not in solid_cells:
+                    continue
+                
+                spring = Spring(x * TILE_SIZE, y * TILE_SIZE)
+                self.obstacles.append(spring)
+                obstacle_cells.add((x, y))
+                break
     
     def _spawn_hardcore_enemies(self, floors: List[Dict]) -> None:
         """生成各种敌人"""
