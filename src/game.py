@@ -20,6 +20,7 @@ from .settings import (
 from .core.state_machine import StateMachine
 from .core.resource_manager import ResourceManager
 from .core.event_system import EventSystem
+from .core.audio_manager import AudioManager
 
 
 class Game:
@@ -61,6 +62,11 @@ class Game:
         
         # 初始化Pygame
         try:
+            # 降低音频延迟：必须在 pygame.init() 前调用
+            try:
+                pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=256)
+            except Exception:
+                pass
             pygame.init()
             pygame.display.set_caption(TITLE)
         except pygame.error as e:
@@ -100,6 +106,9 @@ class Game:
         # 初始化子系统
         self.resource_manager = ResourceManager()
         self.event_system = EventSystem()
+        self.audio_manager = AudioManager()
+        # 音频初始化失败会自动降级为静默模式，不影响游戏运行
+        self.audio_manager.init()
         self.state_machine = StateMachine(self)
         
         # 注册游戏状态（延迟导入避免循环依赖）
@@ -350,6 +359,10 @@ class Game:
     def _cleanup(self) -> None:
         """清理资源并退出"""
         self.resource_manager.clear_cache()
+        try:
+            self.audio_manager.shutdown()
+        except Exception:
+            pass
         pygame.quit()
     
     def quit(self) -> None:

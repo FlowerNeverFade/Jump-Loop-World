@@ -31,6 +31,11 @@ class PauseState(GameState):
     
     def enter(self, **kwargs) -> None:
         """进入暂停状态"""
+        # 暂停音乐（不切歌）
+        try:
+            self.game.audio_manager.pause_music()
+        except Exception:
+            pass
         self.menu = Menu("游戏暂停")
         
         self.menu.add_button("继续游戏", self._resume)
@@ -38,6 +43,11 @@ class PauseState(GameState):
     
     def exit(self) -> None:
         """退出暂停状态"""
+        # 恢复音乐
+        try:
+            self.game.audio_manager.resume_music()
+        except Exception:
+            pass
         self.menu = None
     
     def _resume(self) -> None:

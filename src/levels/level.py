@@ -508,6 +508,14 @@ class Level:
                 enemy.update(dt)
                 enemy.apply_collision(self.solid_rects)
                 enemy.check_edge(self.solid_rects)
+
+        # 壳滑动击杀：让 Koopa 的壳可以撞死其他敌人
+        for enemy in self.enemies:
+            try:
+                if enemy.active and isinstance(enemy, Koopa):
+                    enemy.check_shell_collision(self.enemies)
+            except Exception:
+                pass
         
         # 获取玩家位置和金币磁铁范围
         player_center_x = player.x + player.width / 2
@@ -585,6 +593,9 @@ class Level:
         Args:
             player: 玩家实例
         """
+        if not player.active:
+            return
+
         # 与敌人碰撞
         for enemy in self.enemies:
             if not enemy.active or enemy.is_dead:
@@ -597,6 +608,13 @@ class Level:
                 elif enemy.on_player_collision(player):
                     # 玩家受伤
                     player.take_damage()
+
+        # 与陷阱（尖刺）碰撞：接触即死（无敌状态除外）
+        if player.active and not player.is_invincible():
+            for tile in self.tiles:
+                if isinstance(tile, SpikeTile) and tile.solid and player.rect.colliderect(tile.rect):
+                    player.die()
+                    break
         
         # 与道具碰撞
         for item in self.items:

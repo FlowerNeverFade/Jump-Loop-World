@@ -70,6 +70,11 @@ class ShopState(GameState):
     
     def enter(self, **kwargs) -> None:
         """进入商店状态"""
+        # 商店界面使用菜单音乐
+        try:
+            self.game.audio_manager.play_music('menu')
+        except Exception:
+            pass
         # 同步当前游戏难度到商店选择（避免每次进入都默认“简单”）
         if self.game.difficulty == DifficultySettings.HARD:
             self.selected_difficulty = 'hard'
@@ -120,32 +125,43 @@ class ShopState(GameState):
         self.action_buttons: List[Button] = []
         action_y = SCREEN_HEIGHT - 65  # 上移避免与提示重叠
         
+        # 按钮尺寸和布局（紧凑排列）
+        diff_btn_w = 60  # 难度按钮宽度
+        start_btn_w = 90  # 开始按钮宽度
+        back_btn_w = 60  # 返回按钮宽度
+        btn_h = 36
+        btn_spacing = 8
+        
+        # 计算总宽度并居中
+        total_w = diff_btn_w * 3 + start_btn_w + back_btn_w + btn_spacing * 4
+        start_x = (SCREEN_WIDTH - total_w) // 2
+        
         # 难度选择按钮
         easy_btn = Button(
-            x=SCREEN_WIDTH // 2 - 320,
+            x=start_x,
             y=action_y,
-            width=80,
-            height=40,
+            width=diff_btn_w,
+            height=btn_h,
             text="简单",
             callback=self._select_easy
         )
         self.action_buttons.append(easy_btn)
         
         hard_btn = Button(
-            x=SCREEN_WIDTH // 2 - 230,
+            x=start_x + diff_btn_w + btn_spacing,
             y=action_y,
-            width=80,
-            height=40,
+            width=diff_btn_w,
+            height=btn_h,
             text="困难",
             callback=self._select_hard
         )
         self.action_buttons.append(hard_btn)
         
         hardcore_btn = Button(
-            x=SCREEN_WIDTH // 2 - 140,
+            x=start_x + (diff_btn_w + btn_spacing) * 2,
             y=action_y,
-            width=80,
-            height=40,
+            width=diff_btn_w,
+            height=btn_h,
             text="变态",
             callback=self._select_hardcore
         )
@@ -153,21 +169,21 @@ class ShopState(GameState):
         
         # 开始冒险按钮
         start_btn = Button(
-            x=SCREEN_WIDTH // 2 - 40,
+            x=start_x + (diff_btn_w + btn_spacing) * 3,
             y=action_y,
-            width=100,
-            height=40,
-            text="开始冒险",
+            width=start_btn_w,
+            height=btn_h,
+            text="开始",
             callback=self._start_adventure
         )
         self.action_buttons.append(start_btn)
         
         # 返回按钮
         back_btn = Button(
-            x=SCREEN_WIDTH // 2 + 80,
+            x=start_x + (diff_btn_w + btn_spacing) * 3 + start_btn_w + btn_spacing,
             y=action_y,
-            width=80,
-            height=40,
+            width=back_btn_w,
+            height=btn_h,
             text="返回",
             callback=self._go_back
         )
@@ -467,6 +483,17 @@ class ShopState(GameState):
         # 操作提示
         self._render_hints(screen)
     
+    def _truncate_text(self, text: str, font: pygame.font.Font, max_width: int) -> str:
+        """截断文字以适应最大宽度"""
+        if font.size(text)[0] <= max_width:
+            return text
+        
+        # 逐字减少直到适合
+        while len(text) > 0 and font.size(text + "...")[0] > max_width:
+            text = text[:-1]
+        
+        return text + "..." if text else "..."
+    
     def _render_items(self, screen: pygame.Surface) -> None:
         """渲染商品列表"""
         if not self.shop_items:
@@ -494,20 +521,7 @@ class ShopState(GameState):
             pygame.draw.rect(screen, bg_color, item_rect, border_radius=8)
             pygame.draw.rect(screen, (100, 100, 120), item_rect, width=1, border_radius=8)
             
-            # 名称
-            name_color = (200, 200, 200) if item.can_purchase else (120, 120, 120)
-            name_text = item.name
-            if item.category == ShopCategory.UPGRADES and item.max_level > 1:
-                name_text += f" (Lv.{item.current_level}/{item.max_level})"
-            
-            name_surface = self.item_font.render(name_text, True, name_color)
-            screen.blit(name_surface, (item_rect.x + 15, item_rect.y + 8))
-            
-            # 描述
-            desc_surface = self.desc_font.render(item.description, True, (140, 140, 160))
-            screen.blit(desc_surface, (item_rect.x + 15, item_rect.y + 32))
-            
-            # 价格/状态
+            # 先渲染价格/状态（需要知道其宽度来计算文字可用空间）
             if item.can_purchase:
                 cost_color = (255, 215, 0)
                 cost_text = f"{item.cost}"
@@ -516,16 +530,38 @@ class ShopState(GameState):
                 is_equipped = getattr(item, 'is_equipped', False)
                 if is_equipped:
                     cost_color = (100, 255, 100)
-                    cost_text = "已装备"
+                    cost_text = "装备中"
                 else:
                     cost_color = (180, 180, 100)
-                    cost_text = "点击装备"
+                    cost_text = "装备"
             else:
                 cost_color = (100, 180, 100)
                 cost_text = "已购买" if item.is_purchased else "已满级"
             
             cost_surface = self.item_font.render(cost_text, True, cost_color)
-            screen.blit(cost_surface, (item_rect.right - cost_surface.get_width() - 15, item_rect.y + 18))
+            cost_width = cost_surface.get_width()
+            
+            # 计算文字可用宽度（左边距15 + 右边距15 + 价格宽度 + 间隔20）
+            text_max_width = item_rect.width - 15 - 15 - cost_width - 20
+            
+            # 名称
+            name_color = (200, 200, 200) if item.can_purchase else (120, 120, 120)
+            name_text = item.name
+            if item.category == ShopCategory.UPGRADES and item.max_level > 1:
+                name_text += f" (Lv.{item.current_level}/{item.max_level})"
+            
+            # 截断名称以适应宽度
+            name_text = self._truncate_text(name_text, self.item_font, text_max_width)
+            name_surface = self.item_font.render(name_text, True, name_color)
+            screen.blit(name_surface, (item_rect.x + 15, item_rect.y + 5))
+            
+            # 描述（截断以适应宽度）
+            desc_text = self._truncate_text(item.description, self.desc_font, text_max_width)
+            desc_surface = self.desc_font.render(desc_text, True, (140, 140, 160))
+            screen.blit(desc_surface, (item_rect.x + 15, item_rect.y + 28))
+            
+            # 渲染价格/状态
+            screen.blit(cost_surface, (item_rect.right - cost_width - 15, item_rect.y + 15))
         
         # 滚动指示器
         if len(self.shop_items) > self.max_visible_items:
@@ -541,31 +577,26 @@ class ShopState(GameState):
         """渲染当前难度指示器"""
         # 难度文字
         if self.selected_difficulty == 'easy':
-            diff_text = "当前难度: 简单"
+            diff_text = "简单"
             diff_color = (80, 200, 80)  # 绿色
-        elif self.selected_difficulty == 'hard':
-            diff_text = "当前难度: 困难"
-            diff_color = (220, 80, 80)  # 红色
-        else:  # hardcore
-            diff_text = "当前难度: 变态"
-            diff_color = (200, 80, 200)  # 紫色
-        
-        # 渲染难度指示
-        diff_surface = self.item_font.render(diff_text, True, diff_color)
-        
-        # 放在左上角
-        screen.blit(diff_surface, (20, 20))
-        
-        # 添加难度说明
-        if self.selected_difficulty == 'easy':
             desc = "敌人较少，无陷阱"
         elif self.selected_difficulty == 'hard':
-            desc = "敌人更多更快，有尖刺和移动平台"
+            diff_text = "困难"
+            diff_color = (220, 80, 80)  # 红色
+            desc = "敌人更多更快，有尖刺"
         else:  # hardcore
-            desc = "多层复式关卡，新敌人，危险障碍物"
+            diff_text = "变态"
+            diff_color = (200, 80, 200)  # 紫色
+            desc = "复式关卡，新敌人，危险障碍"
         
-        desc_surface = self.desc_font.render(desc, True, (150, 150, 170))
-        screen.blit(desc_surface, (20, 45))
+        # 渲染难度指示（放在左上角，一行显示）
+        label_surface = self.desc_font.render("难度:", True, (150, 150, 170))
+        diff_surface = self.desc_font.render(diff_text, True, diff_color)
+        desc_surface = self.desc_font.render(f"({desc})", True, (120, 120, 140))
+        
+        screen.blit(label_surface, (20, 22))
+        screen.blit(diff_surface, (20 + label_surface.get_width() + 5, 22))
+        screen.blit(desc_surface, (20 + label_surface.get_width() + 5 + diff_surface.get_width() + 8, 22))
     
     def _render_hints(self, screen: pygame.Surface) -> None:
         """渲染操作提示"""

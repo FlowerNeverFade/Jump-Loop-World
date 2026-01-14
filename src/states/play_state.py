@@ -60,6 +60,11 @@ class PlayState(GameState):
     
     def enter(self, **kwargs) -> None:
         """进入游戏状态"""
+        # 游戏背景音乐
+        try:
+            self.game.audio_manager.play_music('game')
+        except Exception:
+            pass
         # 检查是否是双人模式
         self.two_player_mode = kwargs.get('two_player', False)
         
@@ -120,6 +125,7 @@ class PlayState(GameState):
         EventSystem().subscribe(GameEvent.LEVEL_COMPLETE, self._on_level_complete)
         EventSystem().subscribe(GameEvent.COIN_COLLECT, self._on_coin_collect)
         EventSystem().subscribe(GameEvent.ENEMY_STOMP, self._on_enemy_stomp)
+        EventSystem().subscribe(GameEvent.ENEMY_DEATH, self._on_enemy_death)
         EventSystem().subscribe(GameEvent.ITEM_COLLECT, self._on_item_collect)
     
     def _unsubscribe_events(self) -> None:
@@ -128,6 +134,7 @@ class PlayState(GameState):
         EventSystem().unsubscribe(GameEvent.LEVEL_COMPLETE, self._on_level_complete)
         EventSystem().unsubscribe(GameEvent.COIN_COLLECT, self._on_coin_collect)
         EventSystem().unsubscribe(GameEvent.ENEMY_STOMP, self._on_enemy_stomp)
+        EventSystem().unsubscribe(GameEvent.ENEMY_DEATH, self._on_enemy_death)
         EventSystem().unsubscribe(GameEvent.ITEM_COLLECT, self._on_item_collect)
     
     def _on_player_death(self, data: dict) -> None:
@@ -170,6 +177,11 @@ class PlayState(GameState):
     
     def _on_enemy_stomp(self, data: dict) -> None:
         """处理踩敌人事件"""
+        score = data.get('score', 100)
+        self.game.add_score(score)
+
+    def _on_enemy_death(self, data: dict) -> None:
+        """处理敌人死亡事件（例如：无敌/龟壳撞击击杀）"""
         score = data.get('score', 100)
         self.game.add_score(score)
     

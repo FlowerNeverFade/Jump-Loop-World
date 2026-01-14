@@ -31,6 +31,11 @@ class MenuState(GameState):
     
     def enter(self, **kwargs) -> None:
         """进入菜单状态"""
+        # 菜单背景音乐
+        try:
+            self.game.audio_manager.play_music('menu')
+        except Exception:
+            pass
         # 创建菜单
         self.menu = Menu("Jump Loop World")
         self._show_main_menu()

@@ -60,6 +60,11 @@ class SaveSelectState(GameState):
     
     def enter(self, **kwargs) -> None:
         """进入存档选择状态"""
+        # 存档界面使用菜单音乐
+        try:
+            self.game.audio_manager.play_music('menu')
+        except Exception:
+            pass
         self._refresh_save_list()
         self._create_buttons()
     

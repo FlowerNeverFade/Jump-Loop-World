@@ -131,6 +131,16 @@ ASSETS_DIR = os.path.join(BASE_DIR, 'assets')
 SPRITES_DIR = os.path.join(ASSETS_DIR, 'sprites')
 LEVELS_DIR = os.path.join(ASSETS_DIR, 'levels')
 
+# 音频目录
+# 说明：首次运行时若缺少音频文件，会由 AudioManager 自动生成简单的 wav 资源
+AUDIO_DIR = os.path.join(ASSETS_DIR, 'audio')
+SFX_DIR = os.path.join(AUDIO_DIR, 'sfx')
+MUSIC_DIR = os.path.join(AUDIO_DIR, 'music')
+
+# 默认音量（0.0 - 1.0）
+DEFAULT_MUSIC_VOLUME = 0.35
+DEFAULT_SFX_VOLUME = 0.65
+
 # 精灵子目录
 PLAYER_SPRITES_DIR = os.path.join(SPRITES_DIR, 'player')
 ENEMY_SPRITES_DIR = os.path.join(SPRITES_DIR, 'enemies')

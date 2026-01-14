@@ -41,6 +41,12 @@ class GameOverState(GameState):
     def enter(self, **kwargs) -> None:
         """进入游戏结束状态"""
         self.won = kwargs.get('won', False)
+
+        # 结算界面使用菜单音乐
+        try:
+            self.game.audio_manager.play_music('menu')
+        except Exception:
+            pass
         
         # 检查是否为冒险模式
         self.is_adventure_mode = self.save_manager.current_save_id is not None

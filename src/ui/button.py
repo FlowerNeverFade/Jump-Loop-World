@@ -9,6 +9,7 @@ import pygame
 from typing import Callable, Optional, Tuple
 
 from ..settings import Colors
+from ..core.audio_manager import AudioManager
 
 
 class Button:
@@ -54,6 +55,7 @@ class Button:
         self.hovered = False
         self.pressed = False
         self.enabled = True
+        self._was_hovered = False
         
         # 颜色
         self.color_normal = Colors.UI_BUTTON
@@ -69,11 +71,19 @@ class Button:
     
     def _init_font(self) -> None:
         """初始化字体"""
+        # 根据按钮高度自动选择字体大小
+        if self.height <= 36:
+            font_size = 18
+        elif self.height <= 40:
+            font_size = 20
+        else:
+            font_size = 24
+        
         try:
             # 尝试使用系统中文字体
-            self.font = pygame.font.SysFont('microsoftyahei', 24)
+            self.font = pygame.font.SysFont('microsoftyahei', font_size)
         except:
-            self.font = pygame.font.Font(None, 28)
+            self.font = pygame.font.Font(None, font_size + 4)
     
     def handle_event(self, event: pygame.event.Event) -> bool:
         """
@@ -89,7 +99,15 @@ class Button:
             return False
         
         if event.type == pygame.MOUSEMOTION:
-            self.hovered = self.rect.collidepoint(event.pos)
+            new_hovered = self.rect.collidepoint(event.pos)
+            self.hovered = new_hovered
+            # 仅在“刚进入悬停”时播放一次
+            if new_hovered and not self._was_hovered:
+                try:
+                    AudioManager().play_sfx("ui_hover")
+                except Exception:
+                    pass
+            self._was_hovered = new_hovered
             return self.hovered
         
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -101,6 +119,10 @@ class Button:
             if event.button == 1 and self.pressed:
                 self.pressed = False
                 if self.rect.collidepoint(event.pos) and self.callback:
+                    try:
+                        AudioManager().play_sfx("ui_click")
+                    except Exception:
+                        pass
                     self.callback()
                     return True
         
@@ -111,6 +133,7 @@ class Button:
         # 检查鼠标位置更新悬停状态
         mouse_pos = pygame.mouse.get_pos()
         self.hovered = self.rect.collidepoint(mouse_pos)
+        self._was_hovered = self.hovered
     
     def render(self, screen: pygame.Surface) -> None:
         """

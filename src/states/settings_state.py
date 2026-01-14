@@ -14,7 +14,8 @@ from ..ui.button import Button
 from ..core.player_config import PlayerConfig
 from ..core.save_manager import SaveManager
 from ..core.key_bindings import KeyBindings
-from ..settings import Colors, SCREEN_WIDTH, SCREEN_HEIGHT
+from ..core.audio_manager import AudioManager
+from ..settings import Colors, SCREEN_WIDTH, SCREEN_HEIGHT, DEFAULT_MUSIC_VOLUME, DEFAULT_SFX_VOLUME
 
 if TYPE_CHECKING:
     from ..game import Game
@@ -54,12 +55,21 @@ class SettingsState(GameState):
     
     def enter(self, **kwargs) -> None:
         """进入设置状态"""
+        # 设置界面使用菜单音乐
+        try:
+            self.game.audio_manager.play_music('menu')
+        except Exception:
+            pass
         self._create_ui()
     
     def exit(self) -> None:
         """退出设置状态"""
         self._save_settings()
         self.key_bindings.save_bindings()
+        try:
+            AudioManager().save_settings()
+        except Exception:
+            pass
         self.sliders.clear()
         self.buttons.clear()
     
@@ -134,10 +144,10 @@ class SettingsState(GameState):
     def _create_sensitivity_ui(self) -> None:
         """创建灵敏度设置UI"""
         center_x = SCREEN_WIDTH // 2
-        start_y = 140
+        start_y = 120
         slider_width = 300
         slider_height = 12
-        spacing = 80
+        spacing = 60
         
         # 移动速度滑块
         speed_info = self.player_config.get_param_info('move_speed_multiplier')
@@ -186,6 +196,37 @@ class SettingsState(GameState):
             on_change=lambda v: setattr(self.player_config, 'jump_power_multiplier', v)
         )
         self.sliders.append(jump_slider)
+
+        # 音量设置（全局）
+        audio = AudioManager()
+
+        music_slider = Slider(
+            x=center_x - slider_width // 2,
+            y=start_y + spacing * 3,
+            width=slider_width,
+            height=slider_height,
+            min_value=0.0,
+            max_value=1.0,
+            initial_value=getattr(audio, "music_volume", DEFAULT_MUSIC_VOLUME),
+            label="音乐音量",
+            step=0.05,
+            on_change=lambda v: audio.set_music_volume(v)
+        )
+        self.sliders.append(music_slider)
+
+        sfx_slider = Slider(
+            x=center_x - slider_width // 2,
+            y=start_y + spacing * 4,
+            width=slider_width,
+            height=slider_height,
+            min_value=0.0,
+            max_value=1.0,
+            initial_value=getattr(audio, "sfx_volume", DEFAULT_SFX_VOLUME),
+            label="音效音量",
+            step=0.05,
+            on_change=lambda v: audio.set_sfx_volume(v)
+        )
+        self.sliders.append(sfx_slider)
         
         # 设置初始焦点
         if self.sliders:
@@ -224,6 +265,17 @@ class SettingsState(GameState):
             for i, name in enumerate(param_names):
                 if i < len(self.sliders):
                     self.sliders[i].value = getattr(self.player_config, name)
+
+            # 重置音量（后两个滑块）
+            try:
+                audio = AudioManager()
+                audio.set_music_volume(DEFAULT_MUSIC_VOLUME)
+                audio.set_sfx_volume(DEFAULT_SFX_VOLUME)
+                if len(self.sliders) >= 5:
+                    self.sliders[3].value = DEFAULT_MUSIC_VOLUME
+                    self.sliders[4].value = DEFAULT_SFX_VOLUME
+            except Exception:
+                pass
         else:
             self.key_bindings.reset_to_defaults()
             self._create_keybinds_ui()

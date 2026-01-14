@@ -35,7 +35,7 @@ class Entity(ABC):
     """
     
     # 是否显示调试边框
-    show_debug_box = True
+    show_debug_box = False
     # 默认边框颜色
     debug_box_color = (0, 255, 0)  # 绿色
     
