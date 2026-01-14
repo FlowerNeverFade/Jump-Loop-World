@@ -15,7 +15,7 @@ from ..core.roguelike_data import (
     RoguelikeData, ShopCategory, ShopItem,
     UpgradeDefinition, AbilityDefinition, EquipmentDefinition
 )
-from ..settings import Colors, SCREEN_WIDTH, SCREEN_HEIGHT
+from ..settings import Colors, SCREEN_WIDTH, SCREEN_HEIGHT, DifficultySettings
 
 if TYPE_CHECKING:
     from ..game import Game
@@ -70,6 +70,14 @@ class ShopState(GameState):
     
     def enter(self, **kwargs) -> None:
         """进入商店状态"""
+        # 同步当前游戏难度到商店选择（避免每次进入都默认“简单”）
+        if self.game.difficulty == DifficultySettings.HARD:
+            self.selected_difficulty = 'hard'
+        elif self.game.difficulty == DifficultySettings.HARDCORE:
+            self.selected_difficulty = 'hardcore'
+        else:
+            self.selected_difficulty = 'easy'
+        
         self._create_category_buttons()
         self._load_shop_items()
     

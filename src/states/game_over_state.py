@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from .game_state import GameState
 from ..ui.menu import Menu
-from ..settings import SCREEN_WIDTH, SCREEN_HEIGHT, Colors
+from ..settings import SCREEN_WIDTH, SCREEN_HEIGHT, Colors, DifficultySettings
 from ..core.save_manager import SaveManager
 
 if TYPE_CHECKING:
@@ -85,7 +85,13 @@ class GameOverState(GameState):
     def _restart(self) -> None:
         """重新开始游戏"""
         self.game.reset_game_data()
-        self.state_machine.change_state('play')
+        
+        # 沿用当前难度；若为变态难度，则需要进入 HardcoreLevel
+        hardcore = self.game.difficulty == DifficultySettings.HARDCORE
+        if hardcore:
+            self.state_machine.change_state('play', hardcore=True)
+        else:
+            self.state_machine.change_state('play')
     
     def _return_to_shop(self) -> None:
         """返回商店（冒险模式）"""
