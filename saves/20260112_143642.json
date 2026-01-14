@@ -1,0 +1,49 @@
+{
+  "id": "20260112_143642",
+  "name": "存档 1",
+  "created_at": "2026-01-12T14:36:42.188251",
+  "last_played": "2026-01-14T19:21:36.228195",
+  "play_time": 0,
+  "total_coins": 3036215598074,
+  "current_run_coins": 372,
+  "level_reached": 1,
+  "runs_completed": 0,
+  "enemies_defeated": 0,
+  "player_config": {
+    "move_speed_multiplier": 1.0,
+    "friction_multiplier": 1.0,
+    "jump_power_multiplier": 1.0
+  },
+  "upgrades": {
+    "max_health": 5,
+    "move_speed": 5,
+    "jump_height": 5,
+    "coin_magnet": 3,
+    "invincible_time": 3
+  },
+  "abilities": {
+    "double_jump": true,
+    "dash": true,
+    "wall_jump": true,
+    "ground_pound": true
+  },
+  "equipment": {
+    "hat": "lucky_hat",
+    "boots": "feather_boots",
+    "accessory": "speed_charm"
+  },
+  "purchased_items": [
+    "lucky_hat",
+    "hard_hat",
+    "speed_boots",
+    "jump_boots",
+    "feather_boots",
+    "speed_charm"
+  ],
+  "statistics": {
+    "total_jumps": 0,
+    "total_deaths": 0,
+    "max_combo": 0,
+    "best_time": null
+  }
+}
