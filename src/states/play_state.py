@@ -376,6 +376,20 @@ class PlayState(GameState):
         if not self.player or not self.player2:
             return self.player or self.player2
         
+        # 检查哪些玩家还活着
+        p1_alive = self.player.active
+        p2_alive = self.player2.active
+        
+        # 如果只有一个玩家存活，摄像机只跟随存活的玩家
+        if p1_alive and not p2_alive:
+            return self.player
+        elif p2_alive and not p1_alive:
+            return self.player2
+        elif not p1_alive and not p2_alive:
+            # 两个都死了，返回玩家1的位置（等待重生）
+            return self.player
+        
+        # 两个玩家都存活，计算中心位置
         # 创建一个临时的位置对象
         class CenterPosition:
             def __init__(self, x, y, width, height):
