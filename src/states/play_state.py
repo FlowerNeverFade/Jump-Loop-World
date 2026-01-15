@@ -68,6 +68,9 @@ class PlayState(GameState):
         # 检查是否是双人模式
         self.two_player_mode = kwargs.get('two_player', False)
         
+        # 保存双人模式状态到 Game 对象（用于重新开始时恢复）
+        self.game.two_player_mode = self.two_player_mode
+        
         # 双人模式清除当前存档，避免加载冒险模式的能力
         if self.two_player_mode:
             from ..core.save_manager import SaveManager
@@ -245,7 +248,7 @@ class PlayState(GameState):
             self._handle_player2_input(keys)
         
         # 更新玩家1
-        if self.player:
+        if self.player and self.player.active:
             self.player.update(dt)
             if self.level:
                 self.level.check_tile_hits(self.player)
@@ -260,7 +263,7 @@ class PlayState(GameState):
                     self._constrain_player_to_camera(self.player)
         
         # 更新玩家2
-        if self.two_player_mode and self.player2:
+        if self.two_player_mode and self.player2 and self.player2.active:
             self.player2.update(dt)
             if self.level:
                 self.level.check_tile_hits(self.player2)
@@ -284,8 +287,9 @@ class PlayState(GameState):
             else:
                 self.level.update(dt, self.player)
             
-            self.level.check_player_collisions(self.player)
-            if self.two_player_mode and self.player2:
+            if self.player.active:
+                self.level.check_player_collisions(self.player)
+            if self.two_player_mode and self.player2 and self.player2.active:
                 self.level.check_player_collisions(self.player2)
     
     def _handle_player1_input(self, keys) -> None:

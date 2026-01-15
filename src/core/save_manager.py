@@ -10,8 +10,11 @@ AI辅助生成: 实现游戏存档的保存、加载和管理功能
 
 import json
 import os
+import sys
 from datetime import datetime
 from typing import Dict, List, Optional, Any
+
+from ..settings import APP_NAME, get_user_data_dir
 
 
 class SaveManager:
@@ -41,10 +44,11 @@ class SaveManager:
         self._initialized = True
         
         # 存档目录
-        self.save_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            'saves'
-        )
+        if getattr(sys, "frozen", False):
+            base_dir = get_user_data_dir(APP_NAME)
+        else:
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.save_dir = os.path.join(base_dir, "saves")
         
         # 确保存档目录存在
         if not os.path.exists(self.save_dir):

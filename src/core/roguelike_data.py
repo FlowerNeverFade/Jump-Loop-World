@@ -176,7 +176,7 @@ class RoguelikeData:
         'dash': AbilityDefinition(
             id='dash',
             name='冲刺',
-            description='按Shift键快速冲刺一小段距离',
+            description='按Alt键快速冲刺一小段距离',
             cost=600,
             icon='dash'
         ),

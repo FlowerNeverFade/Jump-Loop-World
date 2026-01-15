@@ -11,6 +11,7 @@ AI辅助生成: 包含所有游戏配置参数，便于统一管理和修改
 """
 
 import os
+import sys
 
 # ==================== 屏幕设置 ====================
 SCREEN_WIDTH = 800          # 屏幕宽度（像素）
@@ -125,8 +126,21 @@ class Colors:
 
 
 # ==================== 资源路径 ====================
+APP_NAME = "JumpLoopWorld"
+
+def get_base_dir() -> str:
+    """获取资源基准目录（支持 PyInstaller 打包）。"""
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return sys._MEIPASS
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def get_user_data_dir(app_name: str = APP_NAME) -> str:
+    """获取用户数据目录（存档/配置使用）。"""
+    base_dir = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or os.path.expanduser("~")
+    return os.path.join(base_dir, app_name)
+
 # 获取项目根目录
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = get_base_dir()
 ASSETS_DIR = os.path.join(BASE_DIR, 'assets')
 SPRITES_DIR = os.path.join(ASSETS_DIR, 'sprites')
 LEVELS_DIR = os.path.join(ASSETS_DIR, 'levels')

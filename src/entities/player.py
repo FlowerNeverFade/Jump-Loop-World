@@ -132,6 +132,7 @@ class Player(AnimatedEntity):
         
         # 玩家配置引用（用于灵敏度设置）
         self.player_config = PlayerConfig()
+        self.key_bindings = KeyBindings()
         
         # 加载存档中的能力
         self._load_abilities_from_save()
@@ -230,26 +231,26 @@ class Player(AnimatedEntity):
         # 单人模式：WASD + 方向键 都可以
         # 双人模式：玩家1用WASD，玩家2用方向键
         if not self.two_player_mode:
-            # 单人模式：两套按键都可以用
-            left_pressed = keys[pygame.K_a] or keys[pygame.K_LEFT]
-            right_pressed = keys[pygame.K_d] or keys[pygame.K_RIGHT]
-            jump_pressed = keys[pygame.K_w] or keys[pygame.K_SPACE] or keys[pygame.K_UP]
-            down_pressed = keys[pygame.K_s] or keys[pygame.K_DOWN]
-            dash_pressed = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+            # 单人模式：使用可配置的按键绑定
+            left_pressed = self.key_bindings.is_action_pressed('move_left', keys)
+            right_pressed = self.key_bindings.is_action_pressed('move_right', keys)
+            jump_pressed = self.key_bindings.is_action_pressed('jump', keys)
+            down_pressed = self.key_bindings.is_action_pressed('down', keys)
+            dash_pressed = self.key_bindings.is_action_pressed('dash', keys)
         elif self.player_id == 1:
-            # 双人模式 玩家1: WASD + 左Shift冲刺
+            # 双人模式 玩家1: WASD + 左Alt冲刺
             left_pressed = keys[pygame.K_a]
             right_pressed = keys[pygame.K_d]
             jump_pressed = keys[pygame.K_w] or keys[pygame.K_SPACE]
             down_pressed = keys[pygame.K_s]
-            dash_pressed = keys[pygame.K_LSHIFT]
+            dash_pressed = keys[pygame.K_LALT]
         else:  # player_id == 2
-            # 双人模式 玩家2: 方向键 + 右Shift冲刺
+            # 双人模式 玩家2: 方向键 + 右Alt冲刺
             left_pressed = keys[pygame.K_LEFT]
             right_pressed = keys[pygame.K_RIGHT]
             jump_pressed = keys[pygame.K_UP]
             down_pressed = keys[pygame.K_DOWN]
-            dash_pressed = keys[pygame.K_RSHIFT]
+            dash_pressed = keys[pygame.K_RALT]
         
         # 左右移动（使用加速度实现惯性）- 即使在冲刺中也要记录移动意图
         moving = False
@@ -556,6 +557,10 @@ class Player(AnimatedEntity):
         Returns:
             是否死亡
         """
+        # 已死亡的玩家不再受伤
+        if not self.active:
+            return False
+        
         # 无敌状态不受伤
         if self.hurt_timer > 0 or self.state == PlayerState.INVINCIBLE:
             return False
@@ -583,6 +588,9 @@ class Player(AnimatedEntity):
     
     def die(self) -> None:
         """玩家死亡"""
+        # 防止重复触发死亡事件
+        if not self.active:
+            return
         self.active = False
         EventSystem().emit(GameEvent.PLAYER_DEATH, {'player': self})
     

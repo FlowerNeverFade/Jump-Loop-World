@@ -8,7 +8,10 @@ AI辅助生成: 实现自定义按键绑定功能
 import pygame
 import json
 import os
+import sys
 from typing import Dict, Optional, List, Callable
+
+from ..settings import BASE_DIR, APP_NAME, get_user_data_dir
 
 
 class KeyBindings:
@@ -26,7 +29,7 @@ class KeyBindings:
         'move_right': [pygame.K_RIGHT, pygame.K_d],
         'jump': [pygame.K_SPACE, pygame.K_w, pygame.K_UP],
         'down': [pygame.K_DOWN, pygame.K_s],
-        'dash': [pygame.K_LSHIFT, pygame.K_RSHIFT],
+        'dash': [pygame.K_LALT, pygame.K_RALT],
     }
     
     # 动作名称的中文显示
@@ -69,7 +72,11 @@ class KeyBindings:
         
         self._initialized = True
         self._bindings: Dict[str, List[int]] = {}
-        self._config_path = 'config/key_bindings.json'
+        if getattr(sys, "frozen", False):
+            config_dir = os.path.join(get_user_data_dir(APP_NAME), "config")
+        else:
+            config_dir = os.path.join(BASE_DIR, "config")
+        self._config_path = os.path.join(config_dir, "key_bindings.json")
         
         # 加载绑定
         self._load_bindings()
@@ -111,7 +118,7 @@ class KeyBindings:
         
         Args:
             action: 动作名称
-            slot: 按键槽位（0或1，支持两个按键）
+            slot: 按键槽位（0/1/2，支持三个按键）
             key: pygame按键码
         """
         if action not in self._bindings:

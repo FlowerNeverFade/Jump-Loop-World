@@ -103,6 +103,9 @@ class Game:
         self.lives = self.difficulty['player_lives']
         self.coins = 0
         
+        # 双人模式标志（用于重新开始时恢复）
+        self.two_player_mode = False
+        
         # 初始化子系统
         self.resource_manager = ResourceManager()
         self.event_system = EventSystem()

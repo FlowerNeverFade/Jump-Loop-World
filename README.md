@@ -36,6 +36,18 @@ python generate_sprites.py
 python main.py
 ```
 
+## 打包为 Windows EXE
+
+```powershell
+# 1. 生成精灵图（首次打包需要）
+python generate_sprites.py
+
+# 2. 一键打包
+.\build_exe.ps1
+```
+
+输出文件在 `dist\JumpLoopWorld.exe`。EXE 运行时的存档与配置保存在 `%LOCALAPPDATA%\JumpLoopWorld\`。
+
 ## 游戏操作
 
 ### 单人模式（两套按键均可使用）
@@ -45,7 +57,7 @@ python main.py
 | ← → 或 A D | 左右移动 |
 | ↑ 或 W 或 空格 | 跳跃 |
 | ↓ 或 S | 下蹲/下砸（需解锁） |
-| Shift | 冲刺（需解锁） |
+| Alt | 冲刺（需解锁） |
 | H | 打开/关闭帮助面板 |
 | ESC | 暂停/返回 |
 | 鼠标点击右上角 ? | 打开帮助面板 |
@@ -54,8 +66,8 @@ python main.py
 
 | 玩家 | 移动 | 跳跃 | 冲刺 |
 |------|------|------|------|
-| 玩家1 (红色) | WASD | W/空格 | 左Shift |
-| 玩家2 (绿色) | 方向键 | ↑ | 右Shift |
+| 玩家1 (红色) | WASD | W/空格 | 左Alt |
+| 玩家2 (绿色) | 方向键 | ↑ | 右Alt |
 
 ## 游戏特性
 
@@ -87,6 +99,7 @@ python main.py
 ```
 jump_loop_world/
 ├── main.py                     # 游戏入口
+├── build_exe.ps1               # Windows一键打包脚本
 ├── generate_sprites.py         # 精灵生成脚本
 ├── requirements.txt            # 依赖列表
 ├── README.md                   # 本文件

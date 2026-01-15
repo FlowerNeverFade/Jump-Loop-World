@@ -94,10 +94,14 @@ class GameOverState(GameState):
         
         # 沿用当前难度；若为变态难度，则需要进入 HardcoreLevel
         hardcore = self.game.difficulty == DifficultySettings.HARDCORE
+        
+        # 保持双人模式状态
+        two_player = self.game.two_player_mode
+        
         if hardcore:
-            self.state_machine.change_state('play', hardcore=True)
+            self.state_machine.change_state('play', hardcore=True, two_player=two_player)
         else:
-            self.state_machine.change_state('play')
+            self.state_machine.change_state('play', two_player=two_player)
     
     def _return_to_shop(self) -> None:
         """返回商店（冒险模式）"""

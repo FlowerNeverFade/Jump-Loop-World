@@ -17,17 +17,21 @@ import math
 import os
 import random
 import struct
+import sys
 import wave
 from typing import Dict, Optional
 
 import pygame
 
 from ..settings import (
+    APP_NAME,
+    BASE_DIR,
     AUDIO_DIR,
     SFX_DIR,
     MUSIC_DIR,
     DEFAULT_MUSIC_VOLUME,
     DEFAULT_SFX_VOLUME,
+    get_user_data_dir,
 )
 from .event_system import EventSystem, GameEvent
 
@@ -46,7 +50,10 @@ class AudioManager:
     _instance = None
 
     # 配置文件（全局，不跟随存档）
-    _CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "audio_settings.json")
+    if getattr(sys, "frozen", False):
+        _CONFIG_PATH = os.path.join(get_user_data_dir(APP_NAME), "config", "audio_settings.json")
+    else:
+        _CONFIG_PATH = os.path.join(BASE_DIR, "config", "audio_settings.json")
 
     # 资源映射（相对 MUSIC_DIR / SFX_DIR）
     _SFX_FILES = {
@@ -88,6 +95,10 @@ class AudioManager:
         self._sounds: Dict[str, pygame.mixer.Sound] = {}
         self._current_music: Optional[str] = None
         self._events_hooked: bool = False
+        
+        # 音效防抖：记录每个音效上次播放的时间戳
+        self._sfx_last_played: Dict[str, float] = {}
+        self._sfx_cooldown: float = 0.05  # 同一音效的最小间隔（秒）
 
         self._load_settings()
         self._initialized = True
@@ -187,14 +198,23 @@ class AudioManager:
             print(f"音频设置保存失败: {e}")
 
     def play_sfx(self, name: str) -> None:
-        """播放音效（不存在/初始化失败则忽略）。"""
+        """播放音效（不存在/初始化失败则忽略）。添加防抖机制防止重复播放。"""
         if not self.enabled:
             return
+        
+        # 防抖检查：同一音效在短时间内不重复播放
+        import time
+        current_time = time.time()
+        last_played = self._sfx_last_played.get(name, 0)
+        if current_time - last_played < self._sfx_cooldown:
+            return  # 冷却中，跳过播放
+        
         snd = self._get_sound(name)
         if snd is None:
             return
         try:
             snd.play()
+            self._sfx_last_played[name] = current_time
         except Exception:
             pass
 

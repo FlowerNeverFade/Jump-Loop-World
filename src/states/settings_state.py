@@ -376,12 +376,16 @@ class SettingsState(GameState):
             if self.keybind_items:
                 action = self.keybind_items[self.keybind_selected]['action']
                 self._start_key_binding(action, 1)
+        elif event.key == pygame.K_3:
+            # 绑定第三个槽位
+            if self.keybind_items:
+                action = self.keybind_items[self.keybind_selected]['action']
+                self._start_key_binding(action, 2)
     
     def _handle_keybind_click(self, pos: Tuple[int, int]) -> None:
         """处理按键绑定项目的点击"""
         center_x = SCREEN_WIDTH // 2
-        item_width = 400
-        key_box_width = 80
+        item_width, key_box_width, key_box_spacing, slot_count, slots_start_x = self._get_keybind_layout()
         
         for i, item in enumerate(self.keybind_items):
             item_rect = pygame.Rect(
@@ -395,23 +399,16 @@ class SettingsState(GameState):
                 self.keybind_selected = i
                 
                 # 检查点击了哪个按键槽位
-                key1_rect = pygame.Rect(
-                    center_x + 40,
-                    item['y'] + 8,
-                    key_box_width,
-                    30
-                )
-                key2_rect = pygame.Rect(
-                    center_x + 40 + key_box_width + 10,
-                    item['y'] + 8,
-                    key_box_width,
-                    30
-                )
-                
-                if key1_rect.collidepoint(pos):
-                    self._start_key_binding(item['action'], 0)
-                elif key2_rect.collidepoint(pos):
-                    self._start_key_binding(item['action'], 1)
+                for slot in range(slot_count):
+                    key_rect = pygame.Rect(
+                        slots_start_x + slot * (key_box_width + key_box_spacing),
+                        item['y'] + 8,
+                        key_box_width,
+                        30
+                    )
+                    if key_rect.collidepoint(pos):
+                        self._start_key_binding(item['action'], slot)
+                        break
                 break
     
     def _navigate_sliders(self, direction: int) -> None:
@@ -487,8 +484,7 @@ class SettingsState(GameState):
             small_font = pygame.font.Font(None, 16)
         
         center_x = SCREEN_WIDTH // 2
-        item_width = 400
-        key_box_width = 80
+        item_width, key_box_width, key_box_spacing, slot_count, slots_start_x = self._get_keybind_layout()
         
         for i, item in enumerate(self.keybind_items):
             y = item['y']
@@ -509,8 +505,8 @@ class SettingsState(GameState):
             
             # 按键槽位
             keys = self.key_bindings.get_keys(item['action'])
-            for slot in range(2):
-                key_x = center_x + 40 + slot * (key_box_width + 10)
+            for slot in range(slot_count):
+                key_x = slots_start_x + slot * (key_box_width + key_box_spacing)
                 key_rect = pygame.Rect(key_x, y + 8, key_box_width, 30)
                 
                 # 槽位背景
@@ -578,7 +574,7 @@ class SettingsState(GameState):
             ]
         else:
             hints = [
-                "↑/↓: 选择动作  点击按键槽位或按1/2绑定  ESC: 返回"
+                "↑/↓: 选择动作  点击按键槽位或按1/2/3绑定  ESC: 返回"
             ]
         
         y = SCREEN_HEIGHT - 35
@@ -587,3 +583,13 @@ class SettingsState(GameState):
             rect = text.get_rect(center=(SCREEN_WIDTH // 2, y))
             screen.blit(text, rect)
             y += 20
+
+    def _get_keybind_layout(self) -> Tuple[int, int, int, int, int]:
+        """获取按键绑定布局参数"""
+        item_width = 520
+        key_box_width = 70
+        key_box_spacing = 10
+        slot_count = 3
+        slots_total_width = slot_count * key_box_width + (slot_count - 1) * key_box_spacing
+        slots_start_x = SCREEN_WIDTH // 2 + item_width // 2 - slots_total_width - 15
+        return item_width, key_box_width, key_box_spacing, slot_count, slots_start_x
