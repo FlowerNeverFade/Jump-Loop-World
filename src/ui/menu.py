@@ -152,13 +152,6 @@ class Menu:
         title_surface = self.title_font.render(self.title, True, Colors.UI_HIGHLIGHT)
         title_rect = title_surface.get_rect(center=(SCREEN_WIDTH // 2, 120))
         screen.blit(title_surface, title_rect)
-        
-        # 副标题
-        if self.subtitle_font:
-            subtitle = "Jump Loop World"
-            subtitle_surface = self.subtitle_font.render(subtitle, True, Colors.UI_TEXT)
-            subtitle_rect = subtitle_surface.get_rect(center=(SCREEN_WIDTH // 2, 180))
-            screen.blit(subtitle_surface, subtitle_rect)
     
     def _render_footer(self, screen: pygame.Surface) -> None:
         """渲染底部信息"""
