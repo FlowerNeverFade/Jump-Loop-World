@@ -68,7 +68,27 @@ class HardcoreLevel:
     
     def _on_block_hit(self, data: dict) -> None:
         """处理方块被击中事件"""
-        pass
+        from ..entities.items.coin import BlockCoin
+        from ..entities.items.mushroom import Mushroom, Star
+        
+        x, y = data.get('x', 0), data.get('y', 0)
+        contains = data.get('contains', 'coin')
+        
+        # 在方块上方生成道具
+        spawn_x = x
+        spawn_y = y - TILE_SIZE
+        
+        if contains == 'coin':
+            coin = BlockCoin(spawn_x + TILE_SIZE // 4, spawn_y)
+            self.items.append(coin)
+        elif contains == 'mushroom':
+            mushroom = Mushroom(spawn_x, spawn_y)
+            mushroom.spawn_from_block(y)
+            self.items.append(mushroom)
+        elif contains == 'star':
+            star = Star(spawn_x, spawn_y)
+            star.spawn_from_block(y)
+            self.items.append(star)
     
     def load_level(self) -> None:
         """生成变态模式关卡"""
@@ -420,11 +440,29 @@ class HardcoreLevel:
                 if hasattr(enemy, 'update_bullets'):
                     enemy.update_bullets(self.solid_rects)
         
+        # 壳滑动击杀：让 Koopa 的壳可以撞死其他敌人
+        from ..entities.enemies.koopa import Koopa
+        for enemy in self.enemies:
+            try:
+                if enemy.active and isinstance(enemy, Koopa):
+                    enemy.check_shell_collision(self.enemies)
+            except Exception:
+                pass
+        
+        # 获取玩家位置和金币磁铁范围
+        player_center_x = player.x + player.width / 2
+        player_center_y = player.y + player.height / 2
+        magnet_range = player.player_config.coin_magnet_range
+        
         # 更新道具
         for item in self.items:
             if item.active and not item.collected:
                 item.update(dt)
                 item.apply_collision(self.solid_rects)
+                
+                # 金币磁铁效果
+                if hasattr(item, 'update_magnet') and magnet_range > 0:
+                    item.update_magnet(player_center_x, player_center_y, magnet_range)
         
         # 更新障碍物
         for obstacle in self.obstacles:
@@ -478,6 +516,7 @@ class HardcoreLevel:
     
     def check_tile_hits(self, player: 'Player') -> None:
         """检查玩家与方块的碰撞"""
+        # 向上移动时顶方块
         if player.velocity_y < 0:
             # 使用玩家的实际精灵位置（而不是碰撞框），因为碰撞框有向下偏移
             player_head_rect = pygame.Rect(
@@ -493,6 +532,27 @@ class HardcoreLevel:
                     )
                     if player_head_rect.colliderect(tile_bottom_rect):
                         tile.on_hit_from_below(player)
+        
+        # 下砸时检查脚下的砖块
+        if player.is_ground_pounding and player.velocity_y > 0:
+            # 检查玩家脚底与砖块顶部的碰撞
+            player_feet_rect = pygame.Rect(
+                player.rect.x + 2,
+                player.rect.bottom - 4,
+                player.rect.width - 4,
+                10
+            )
+            
+            for tile in self.tiles:
+                if isinstance(tile, BrickTile) and not tile.broken:
+                    tile_top_rect = pygame.Rect(
+                        tile.rect.x,
+                        tile.rect.y,
+                        tile.rect.width,
+                        10
+                    )
+                    if player_feet_rect.colliderect(tile_top_rect):
+                        tile.on_hit_from_above(player)
     
     def render(self, screen: pygame.Surface) -> None:
         """渲染关卡"""
